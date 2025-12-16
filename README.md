@@ -59,7 +59,7 @@ Configuration is loaded in this priority order:
 ### 1. HALP-specific Environment Variables (highest priority)
 
 ```bash
-export HALP_PROVIDER=anthropic    # or "openai"
+export HALP_PROVIDER=anthropic    # or "openai" or "gemini"
 export HALP_MODEL=claude-haiku-4-5
 export HALP_API_KEY=sk-ant-...
 ```
@@ -69,7 +69,7 @@ export HALP_API_KEY=sk-ant-...
 `~/.config/halp/config.toml`:
 
 ```toml
-provider = "anthropic"
+provider = "anthropic"  # or "openai" or "gemini"
 model = "claude-haiku-4-5"
 api_key = "sk-ant-..."
 
@@ -85,6 +85,8 @@ If no API key is set via `HALP_API_KEY` or config file, halp falls back to:
 export ANTHROPIC_API_KEY=sk-ant-...
 # or
 export OPENAI_API_KEY=sk-...
+# or
+export GEMINI_API_KEY=...
 ```
 
 ### Supported Providers
@@ -93,6 +95,7 @@ export OPENAI_API_KEY=sk-...
 |----------|---------------|---------------------|
 | `anthropic` | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
 | `openai` | `gpt-5-nano` | `OPENAI_API_KEY` |
+| `gemini` | `gemini-2.5-flash` | `GEMINI_API_KEY` |
 
 ## Output Behavior
 

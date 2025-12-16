@@ -1,4 +1,5 @@
 pub mod anthropic;
+pub mod gemini;
 pub mod openai;
 
 use crate::config::{Config, Provider as ProviderType};
@@ -19,5 +20,6 @@ pub fn create_provider(config: &Config) -> Box<dyn LlmProvider> {
     match config.provider {
         ProviderType::Anthropic => Box::new(anthropic::AnthropicProvider::new(config)),
         ProviderType::OpenAI => Box::new(openai::OpenAIProvider::new(config)),
+        ProviderType::Gemini => Box::new(gemini::GeminiProvider::new(config)),
     }
 }

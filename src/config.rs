@@ -7,6 +7,7 @@ use std::path::PathBuf;
 pub enum Provider {
     Anthropic,
     OpenAI,
+    Gemini,
 }
 
 impl Default for Provider {
@@ -74,8 +75,9 @@ impl Config {
         match provider_str.to_lowercase().as_str() {
             "anthropic" | "claude" => Ok(Provider::Anthropic),
             "openai" | "gpt" => Ok(Provider::OpenAI),
+            "gemini" | "google" => Ok(Provider::Gemini),
             other => Err(format!(
-                "Unknown provider '{}'. Use 'anthropic' or 'openai'.",
+                "Unknown provider '{}'. Use 'anthropic', 'openai', or 'gemini'.",
                 other
             )),
         }
@@ -88,6 +90,7 @@ impl Config {
             .unwrap_or_else(|| match provider {
                 Provider::Anthropic => "claude-haiku-4-5".to_string(),
                 Provider::OpenAI => "gpt-5-nano".to_string(),
+                Provider::Gemini => "gemini-2.5-flash".to_string(),
             })
     }
 
@@ -104,6 +107,7 @@ impl Config {
         let provider_env = match provider {
             Provider::Anthropic => "ANTHROPIC_API_KEY",
             Provider::OpenAI => "OPENAI_API_KEY",
+            Provider::Gemini => "GEMINI_API_KEY",
         };
 
         if let Ok(key) = env::var(provider_env) {
