@@ -42,7 +42,8 @@ For seamless usage, add a wrapper function to your shell config:
 
 **zsh** (`~/.zshrc`):
 ```zsh
-function h() { print -z "$(halp "$@")" }
+function _halp() { print -z "$(halp "$*")" }
+alias h='noglob _halp'
 ```
 
 **bash** (`~/.bashrc`):
