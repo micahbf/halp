@@ -86,8 +86,8 @@ impl Config {
             .ok()
             .or_else(|| file_config.model.clone())
             .unwrap_or_else(|| match provider {
-                Provider::Anthropic => "claude-3-5-haiku-latest".to_string(),
-                Provider::OpenAI => "gpt-4o-mini".to_string(),
+                Provider::Anthropic => "claude-haiku-4-5".to_string(),
+                Provider::OpenAI => "gpt-5-nano".to_string(),
             })
     }
 

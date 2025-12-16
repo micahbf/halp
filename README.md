@@ -60,7 +60,7 @@ Configuration is loaded in this priority order:
 
 ```bash
 export HALP_PROVIDER=anthropic    # or "openai"
-export HALP_MODEL=claude-3-5-haiku-latest
+export HALP_MODEL=claude-haiku-4-5
 export HALP_API_KEY=sk-ant-...
 ```
 
@@ -70,7 +70,7 @@ export HALP_API_KEY=sk-ant-...
 
 ```toml
 provider = "anthropic"
-model = "claude-3-5-haiku-latest"
+model = "claude-haiku-4-5"
 api_key = "sk-ant-..."
 
 # Optional: custom API endpoint
@@ -91,8 +91,8 @@ export OPENAI_API_KEY=sk-...
 
 | Provider | Default Model | Environment Variable |
 |----------|---------------|---------------------|
-| `anthropic` | `claude-3-5-haiku-latest` | `ANTHROPIC_API_KEY` |
-| `openai` | `gpt-4o-mini` | `OPENAI_API_KEY` |
+| `anthropic` | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
+| `openai` | `gpt-5-nano` | `OPENAI_API_KEY` |
 
 ## Output Behavior
 
