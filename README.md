@@ -1,0 +1,134 @@
+# halp
+
+A fast terminal utility that translates natural language into shell commands using LLMs.
+
+## Installation
+
+```bash
+cargo install --path .
+```
+
+## Usage
+
+```bash
+halp rsync all files to remote server preserving permissions
+# Output: rsync -av ./ user@remote:/path/
+
+halp find all rust files larger than 1mb
+# Output: find . -name "*.rs" -size +1M
+
+halp compress this directory excluding node_modules
+# Output: tar -czvf archive.tar.gz --exclude='node_modules' .
+```
+
+### Options
+
+```
+halp [OPTIONS] <QUERY>...
+
+Arguments:
+  <QUERY>...  Natural language description of the command you need
+
+Options:
+  -q, --quiet    Suppress explanation (command only)
+  -e, --explain  Show explanation only (no command output)
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+### Shell Integration
+
+For seamless usage, add a wrapper function to your shell config:
+
+**zsh** (`~/.zshrc`):
+```zsh
+function h() { print -z "$(halp "$@")" }
+```
+
+**bash** (`~/.bashrc`):
+```bash
+function h() { read -e -i "$(halp "$@")" cmd && eval "$cmd"; }
+```
+
+This lets you type `h list files by size` and have the command inserted at your prompt for review before execution.
+
+## Configuration
+
+Configuration is loaded in this priority order:
+
+### 1. HALP-specific Environment Variables (highest priority)
+
+```bash
+export HALP_PROVIDER=anthropic    # or "openai"
+export HALP_MODEL=claude-3-5-haiku-latest
+export HALP_API_KEY=sk-ant-...
+```
+
+### 2. Config File
+
+`~/.config/halp/config.toml`:
+
+```toml
+provider = "anthropic"
+model = "claude-3-5-haiku-latest"
+api_key = "sk-ant-..."
+
+# Optional: custom API endpoint
+# api_base_url = "https://api.anthropic.com/v1/messages"
+```
+
+### 3. Provider-specific Environment Variables (fallback)
+
+If no API key is set via `HALP_API_KEY` or config file, halp falls back to:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+# or
+export OPENAI_API_KEY=sk-...
+```
+
+### Supported Providers
+
+| Provider | Default Model | Environment Variable |
+|----------|---------------|---------------------|
+| `anthropic` | `claude-3-5-haiku-latest` | `ANTHROPIC_API_KEY` |
+| `openai` | `gpt-4o-mini` | `OPENAI_API_KEY` |
+
+## Output Behavior
+
+- **stdout**: The command only (for piping)
+- **stderr**: Explanation streamed in real-time (dimmed text)
+
+This design allows easy integration with shell functions and pipes:
+
+```bash
+# Capture just the command
+cmd=$(halp list large files)
+
+# Pipe to clipboard
+halp git squash last 3 commits | pbcopy
+```
+
+## Examples
+
+```bash
+# File operations
+halp find all json files modified in the last week
+halp delete all .DS_Store files recursively
+
+# Git
+halp undo the last commit but keep changes
+halp show diff between main and this branch
+
+# System
+halp show disk usage sorted by size
+halp kill process on port 3000
+
+# Networking
+halp download this url and save as output.zip
+halp check if port 443 is open on google.com
+```
+
+## License
+
+MIT
