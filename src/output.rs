@@ -78,7 +78,7 @@ impl StderrStreamer {
 
     pub fn finish(&mut self) {
         if self.started {
-            eprint!("{}\n", RESET);
+            eprintln!("{}", RESET);
         }
     }
 }
@@ -107,5 +107,126 @@ impl Write for NullWriter {
 
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_standard_format() {
+        let response = "COMMAND: ls -la\nEXPLANATION: Lists all files including hidden ones";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, Some("ls -la".to_string()));
+        assert_eq!(
+            parsed.explanation,
+            Some("Lists all files including hidden ones".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_command_only() {
+        let response = "COMMAND: pwd";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, Some("pwd".to_string()));
+        assert_eq!(parsed.explanation, None);
+    }
+
+    #[test]
+    fn test_parse_explanation_only() {
+        let response = "EXPLANATION: This explains something";
+        let parsed = parse_response(response);
+
+        // Falls back to first non-empty line
+        assert_eq!(
+            parsed.command,
+            Some("EXPLANATION: This explains something".to_string())
+        );
+        assert_eq!(
+            parsed.explanation,
+            Some("This explains something".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_code_block_fallback() {
+        let response = "Here's the command:\n```bash\ngrep -r \"pattern\" .\n```";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, Some("grep -r \"pattern\" .".to_string()));
+        assert_eq!(parsed.explanation, None);
+    }
+
+    #[test]
+    fn test_parse_code_block_no_language() {
+        let response = "```\necho hello\n```";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, Some("echo hello".to_string()));
+    }
+
+    #[test]
+    fn test_parse_first_line_fallback() {
+        let response = "git status\nThis shows the status";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, Some("git status".to_string()));
+    }
+
+    #[test]
+    fn test_parse_empty_response() {
+        let response = "";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, None);
+        assert_eq!(parsed.explanation, None);
+    }
+
+    #[test]
+    fn test_parse_whitespace_only() {
+        let response = "   \n\n   ";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, None);
+        assert_eq!(parsed.explanation, None);
+    }
+
+    #[test]
+    fn test_parse_multiline_command() {
+        let response = "COMMAND: docker run -it \\\n  --name test \\\n  ubuntu\nEXPLANATION: Runs ubuntu";
+        let parsed = parse_response(response);
+
+        // Command ends at first newline per current implementation
+        assert_eq!(parsed.command, Some("docker run -it \\".to_string()));
+        assert_eq!(parsed.explanation, Some("Runs ubuntu".to_string()));
+    }
+
+    #[test]
+    fn test_parse_command_before_explanation() {
+        let response = "Some text\nCOMMAND: ls\nMore text\nEXPLANATION: Lists files";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, Some("ls".to_string()));
+        assert_eq!(parsed.explanation, Some("Lists files".to_string()));
+    }
+
+    #[test]
+    fn test_parse_trims_whitespace() {
+        let response = "COMMAND:    echo hello   \nEXPLANATION:   Says hello   ";
+        let parsed = parse_response(response);
+
+        assert_eq!(parsed.command, Some("echo hello".to_string()));
+        assert_eq!(parsed.explanation, Some("Says hello".to_string()));
+    }
+
+    #[test]
+    fn test_null_writer() {
+        let mut writer = NullWriter;
+        let result = write!(writer, "test output");
+        assert!(result.is_ok());
+        assert!(writer.flush().is_ok());
     }
 }

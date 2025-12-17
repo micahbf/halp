@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::providers::streaming::{create_client, SseProcessor};
 use crate::providers::LlmProvider;
 use async_trait::async_trait;
 use futures_util::StreamExt;
@@ -90,6 +91,23 @@ impl AnthropicProvider {
     }
 }
 
+fn extract_text(data: &str) -> Result<Option<String>, String> {
+    match serde_json::from_str::<StreamEvent>(data) {
+        Ok(event) => match event {
+            StreamEvent::ContentBlockDelta { delta, .. } => {
+                if let Delta::TextDelta { text } = delta {
+                    Ok(Some(text))
+                } else {
+                    Ok(None)
+                }
+            }
+            StreamEvent::Error { error } => Err(format!("API error: {}", error.message)),
+            _ => Ok(None),
+        },
+        Err(e) => Err(format!("Failed to parse API response: {}", e)),
+    }
+}
+
 #[async_trait]
 impl LlmProvider for AnthropicProvider {
     async fn stream_completion(
@@ -98,7 +116,7 @@ impl LlmProvider for AnthropicProvider {
         system: &str,
         output: &mut (dyn Write + Send),
     ) -> Result<String, String> {
-        let client = reqwest::Client::new();
+        let client = create_client();
 
         let request = AnthropicRequest {
             model: self.model.clone(),
@@ -130,45 +148,15 @@ impl LlmProvider for AnthropicProvider {
             return Err(format!("API error ({}): {}", status, body));
         }
 
-        let mut full_response = String::new();
+        let mut processor = SseProcessor::new();
         let mut stream = response.bytes_stream();
-        let mut buffer = String::new();
 
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(|e| format!("Stream error: {}", e))?;
-            buffer.push_str(&String::from_utf8_lossy(&chunk));
-
-            // Process complete SSE events
-            while let Some(event_end) = buffer.find("\n\n") {
-                let event_data = buffer[..event_end].to_string();
-                buffer = buffer[event_end + 2..].to_string();
-
-                for line in event_data.lines() {
-                    if let Some(data) = line.strip_prefix("data: ") {
-                        if data == "[DONE]" {
-                            continue;
-                        }
-
-                        if let Ok(event) = serde_json::from_str::<StreamEvent>(data) {
-                            match event {
-                                StreamEvent::ContentBlockDelta { delta, .. } => {
-                                    if let Delta::TextDelta { text } = delta {
-                                        full_response.push_str(&text);
-                                        let _ = write!(output, "{}", text);
-                                        let _ = output.flush();
-                                    }
-                                }
-                                StreamEvent::Error { error } => {
-                                    return Err(format!("API error: {}", error.message));
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
-            }
+            processor.push_chunk(&chunk);
+            processor.process_events_with_output(output, extract_text)?;
         }
 
-        Ok(full_response)
+        Ok(processor.into_response())
     }
 }

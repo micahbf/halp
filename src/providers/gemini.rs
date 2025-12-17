@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::providers::streaming::{create_client, SseProcessor};
 use crate::providers::LlmProvider;
 use async_trait::async_trait;
 use futures_util::StreamExt;
@@ -73,6 +74,22 @@ impl GeminiProvider {
     }
 }
 
+fn extract_text(data: &str) -> Result<Option<String>, String> {
+    match serde_json::from_str::<StreamChunk>(data) {
+        Ok(chunk) => {
+            let text = chunk
+                .candidates
+                .and_then(|c| c.into_iter().next())
+                .and_then(|c| c.content)
+                .and_then(|c| c.parts)
+                .and_then(|p| p.into_iter().next())
+                .and_then(|p| p.text);
+            Ok(text)
+        }
+        Err(e) => Err(format!("Failed to parse API response: {}", e)),
+    }
+}
+
 #[async_trait]
 impl LlmProvider for GeminiProvider {
     async fn stream_completion(
@@ -81,7 +98,7 @@ impl LlmProvider for GeminiProvider {
         system: &str,
         output: &mut (dyn Write + Send),
     ) -> Result<String, String> {
-        let client = reqwest::Client::new();
+        let client = create_client();
 
         let request = GeminiRequest {
             system_instruction: SystemInstruction {
@@ -116,47 +133,15 @@ impl LlmProvider for GeminiProvider {
             return Err(format!("API error ({}): {}", status, body));
         }
 
-        let mut full_response = String::new();
+        let mut processor = SseProcessor::new();
         let mut stream = response.bytes_stream();
-        let mut buffer = String::new();
 
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(|e| format!("Stream error: {}", e))?;
-            buffer.push_str(&String::from_utf8_lossy(&chunk));
-
-            // Process complete SSE events
-            while let Some(event_end) = buffer.find("\n\n") {
-                let event_data = buffer[..event_end].to_string();
-                buffer = buffer[event_end + 2..].to_string();
-
-                for line in event_data.lines() {
-                    if let Some(data) = line.strip_prefix("data: ") {
-                        if data == "[DONE]" {
-                            continue;
-                        }
-
-                        if let Ok(chunk) = serde_json::from_str::<StreamChunk>(data) {
-                            if let Some(candidates) = chunk.candidates {
-                                if let Some(candidate) = candidates.first() {
-                                    if let Some(content) = &candidate.content {
-                                        if let Some(parts) = &content.parts {
-                                            if let Some(part) = parts.first() {
-                                                if let Some(text) = &part.text {
-                                                    full_response.push_str(text);
-                                                    let _ = write!(output, "{}", text);
-                                                    let _ = output.flush();
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            processor.push_chunk(&chunk);
+            processor.process_events_with_output(output, extract_text)?;
         }
 
-        Ok(full_response)
+        Ok(processor.into_response())
     }
 }

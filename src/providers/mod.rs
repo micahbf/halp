@@ -1,6 +1,7 @@
 pub mod anthropic;
 pub mod gemini;
 pub mod openai;
+mod streaming;
 
 use crate::config::{Config, Provider as ProviderType};
 use async_trait::async_trait;

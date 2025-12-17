@@ -3,17 +3,12 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Provider {
+    #[default]
     Anthropic,
     OpenAI,
     Gemini,
-}
-
-impl Default for Provider {
-    fn default() -> Self {
-        Provider::Anthropic
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -72,7 +67,7 @@ impl Config {
     fn resolve_provider(file_config: &FileConfig) -> Result<Provider, String> {
         let provider_str = env::var("HALP_PROVIDER")
             .ok()
-            .or_else(|| file_config.provider.clone())
+            .or_else(|| file_config.provider.as_ref().cloned())
             .unwrap_or_else(|| "anthropic".to_string());
 
         match provider_str.to_lowercase().as_str() {
@@ -89,7 +84,7 @@ impl Config {
     fn resolve_model(provider: &Provider, file_config: &FileConfig) -> String {
         env::var("HALP_MODEL")
             .ok()
-            .or_else(|| file_config.model.clone())
+            .or_else(|| file_config.model.as_ref().cloned())
             .unwrap_or_else(|| match provider {
                 Provider::Anthropic => "claude-haiku-4-5".to_string(),
                 Provider::OpenAI => "gpt-5-nano".to_string(),
@@ -103,7 +98,7 @@ impl Config {
             return Ok(key);
         }
 
-        if let Some(key) = &file_config.api_key {
+        if let Some(key) = file_config.api_key.as_ref() {
             return Ok(key.clone());
         }
 
@@ -126,6 +121,6 @@ impl Config {
     fn resolve_api_base_url(file_config: &FileConfig) -> Option<String> {
         env::var("HALP_API_BASE_URL")
             .ok()
-            .or_else(|| file_config.api_base_url.clone())
+            .or_else(|| file_config.api_base_url.as_ref().cloned())
     }
 }
