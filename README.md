@@ -2,7 +2,13 @@
 
 A fast terminal utility that translates natural language into shell commands using LLMs.
 
+## Prerequisites
+
+You must have Rust installed. See: [Install Rust](https://rust-lang.org/tools/install/).
+
 ## Installation
+
+Clone this repo and run:
 
 ```bash
 cargo install --path .
@@ -41,12 +47,14 @@ Options:
 For seamless usage, add a wrapper function to your shell config:
 
 **zsh** (`~/.zshrc`):
+
 ```zsh
 function _halp() { print -z "$(halp "$*")" }
 alias h='noglob _halp'
 ```
 
 **bash** (`~/.bashrc`):
+
 ```bash
 function h() { read -e -i "$(halp "$@")" cmd && eval "$cmd"; }
 ```
