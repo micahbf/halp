@@ -57,7 +57,7 @@ impl Config {
         let config_dir = env::var("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .ok()
-            .or_else(|| dirs::config_dir())?;
+            .or_else(|| dirs::home_dir().map(|h| h.join(".config")))?;
 
         Some(config_dir.join("halp").join("config.toml"))
     }
