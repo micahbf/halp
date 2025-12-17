@@ -26,7 +26,7 @@ src/
 
 2. **Streaming**: Both providers stream responses via SSE. Explanation text appears in real-time on stderr while waiting for the full response.
 
-3. **Config priority**: `HALP_*` env vars > config file > provider-specific env vars (`ANTHROPIC_API_KEY`/`OPENAI_API_KEY`). Config file takes precedence over generic provider env vars.
+3. **Config priority**: `HALP_*` env vars > config file > provider-specific env vars (`ANTHROPIC_API_KEY`/`OPENAI_API_KEY`). Config file takes precedence over generic provider env vars. The `system_prompt` setting is config-file-only (no env var).
 
 4. **Response format**: The LLM is prompted to respond with `COMMAND: ...` and `EXPLANATION: ...` prefixes for reliable parsing. Fallback parsing handles code blocks and raw responses.
 
@@ -61,6 +61,8 @@ The system prompt in `src/prompt.rs` instructs the LLM to:
 - Use the format `COMMAND: <cmd>` and `EXPLANATION: <text>`
 - Consider the user's OS, shell, and current directory
 - Prefer portable commands
+
+Users can override the system prompt via `system_prompt` in the config file. Template variables `{{os}}`, `{{shell}}`, and `{{cwd}}` are substituted at runtime.
 
 ## Dependencies
 

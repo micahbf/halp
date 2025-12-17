@@ -84,6 +84,29 @@ api_key = "sk-ant-..."
 
 # Optional: custom API endpoint
 # api_base_url = "https://api.anthropic.com/v1/messages"
+
+# Optional: custom system prompt with {{os}}, {{shell}}, {{cwd}} template variables.
+# Below is the default prompt - uncomment and modify as needed.
+# system_prompt = """
+# You are a command-line assistant. Generate a shell command for the user's request.
+#
+# Format your response EXACTLY as:
+# COMMAND: <the exact command to run>
+# EXPLANATION: <brief one-line explanation>
+#
+# Context:
+# - OS: {{os}}
+# - Shell: {{shell}}
+# - Working directory: {{cwd}}
+#
+# Rules:
+# - Output exactly one command (use && or ; for multi-step operations)
+# - The command must be valid for the specified OS and shell
+# - Prefer common, portable commands when possible
+# - Keep explanation to one concise line
+# - Never include dangerous commands (rm -rf /, etc) without explicit confirmation flags
+# - If the request is ambiguous, make a reasonable assumption and note it in the explanation
+# """
 ```
 
 ### 3. Provider-specific Environment Variables (fallback)
@@ -100,11 +123,11 @@ export GEMINI_API_KEY=...
 
 ### Supported Providers
 
-| Provider | Default Model | Environment Variable |
-|----------|---------------|---------------------|
-| `anthropic` | `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
-| `openai` | `gpt-5-nano` | `OPENAI_API_KEY` |
-| `gemini` | `gemini-2.5-flash` | `GEMINI_API_KEY` |
+| Provider    | Default Model      | Environment Variable |
+| ----------- | ------------------ | -------------------- |
+| `anthropic` | `claude-haiku-4-5` | `ANTHROPIC_API_KEY`  |
+| `openai`    | `gpt-5-nano`       | `OPENAI_API_KEY`     |
+| `gemini`    | `gemini-2.5-flash` | `GEMINI_API_KEY`     |
 
 ## Output Behavior
 

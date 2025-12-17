@@ -22,6 +22,7 @@ pub struct Config {
     pub model: String,
     pub api_key: String,
     pub api_base_url: Option<String>,
+    pub system_prompt: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -30,6 +31,7 @@ struct FileConfig {
     model: Option<String>,
     api_key: Option<String>,
     api_base_url: Option<String>,
+    system_prompt: Option<String>,
 }
 
 impl Config {
@@ -46,6 +48,7 @@ impl Config {
             model,
             api_key,
             api_base_url,
+            system_prompt: file_config.system_prompt,
         })
     }
 

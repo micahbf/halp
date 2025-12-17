@@ -40,7 +40,7 @@ async fn main() -> ExitCode {
 
     // Build the prompt
     let user_query = cli.query.join(" ");
-    let system_prompt = prompt::build_system_prompt();
+    let system_prompt = prompt::build_system_prompt(config.system_prompt.as_deref());
 
     // Create the provider
     let provider = providers::create_provider(&config);
