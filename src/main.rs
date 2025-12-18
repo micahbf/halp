@@ -4,7 +4,7 @@ mod prompt;
 mod providers;
 
 use clap::Parser;
-use output::{parse_response, NullWriter, StderrStreamer};
+use output::{parse_response, NullWriter, Spinner, StderrStreamer};
 use std::process::ExitCode;
 
 #[derive(Parser)]
@@ -52,7 +52,8 @@ async fn main() -> ExitCode {
             .stream_completion(&user_query, &system_prompt, &mut writer)
             .await
     } else {
-        let mut writer = StderrStreamer::new();
+        let spinner = Spinner::start();
+        let mut writer = StderrStreamer::new(Some(spinner));
         let result = provider
             .stream_completion(&user_query, &system_prompt, &mut writer)
             .await;

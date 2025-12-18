@@ -1,8 +1,42 @@
 use std::io::{self, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
 
 // ANSI escape codes for styling
 const DIM: &str = "\x1b[2m";
 const RESET: &str = "\x1b[0m";
+
+const SPINNER_FRAMES: &[char] = &['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'];
+
+pub struct Spinner {
+    stop_flag: Arc<AtomicBool>,
+}
+
+impl Spinner {
+    pub fn start() -> Self {
+        let stop_flag = Arc::new(AtomicBool::new(false));
+        let flag_clone = stop_flag.clone();
+
+        tokio::spawn(async move {
+            let mut idx = 0;
+            let mut interval = tokio::time::interval(Duration::from_millis(80));
+
+            while !flag_clone.load(Ordering::Relaxed) {
+                eprint!("\r{}", SPINNER_FRAMES[idx]);
+                let _ = io::stderr().flush();
+                idx = (idx + 1) % SPINNER_FRAMES.len();
+                interval.tick().await;
+            }
+        });
+
+        Self { stop_flag }
+    }
+
+    pub fn stop(self) {
+        self.stop_flag.store(true, Ordering::Relaxed);
+    }
+}
 
 pub struct ParsedResponse {
     pub command: Option<String>,
@@ -69,14 +103,24 @@ pub fn parse_response(response: &str) -> ParsedResponse {
 /// A writer that streams to stderr with dim styling
 pub struct StderrStreamer {
     started: bool,
+    spinner: Option<Spinner>,
 }
 
 impl StderrStreamer {
-    pub fn new() -> Self {
-        Self { started: false }
+    pub fn new(spinner: Option<Spinner>) -> Self {
+        Self {
+            started: false,
+            spinner,
+        }
     }
 
     pub fn finish(&mut self) {
+        // Stop spinner if it's still running (no data was written)
+        if let Some(spinner) = self.spinner.take() {
+            spinner.stop();
+            eprint!("\r \r");
+            let _ = io::stderr().flush();
+        }
         if self.started {
             eprintln!("{}", RESET);
         }
@@ -87,6 +131,11 @@ impl Write for StderrStreamer {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         if !self.started {
             self.started = true;
+            if let Some(spinner) = self.spinner.take() {
+                spinner.stop();
+                eprint!("\r \r");
+                let _ = io::stderr().flush();
+            }
             eprint!("{}", DIM);
         }
         io::stderr().write(buf)
